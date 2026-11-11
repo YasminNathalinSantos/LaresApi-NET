@@ -1,0 +1,64 @@
+@host = http://localhost:5102
+
+###
+# @name loginGestor
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "gestor@lares.com", "senha": "Gestor@123" }
+
+###
+# @name loginCidadao
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "cidadao@lares.com", "senha": "Cidadao@123" }
+
+###
+POST {{host}}/auth/registro
+Content-Type: application/json
+
+{ "nome": "Ana Souza", "email": "ana@email.com", "senha": "Senha@123" }
+
+###
+GET {{host}}/categorias
+Authorization: Bearer {{loginCidadao.response.body.$.token}}
+
+###
+# @name criar
+POST {{host}}/ocorrencias
+Authorization: Bearer {{loginCidadao.response.body.$.token}}
+Content-Type: application/json
+Idempotency-Key: 7f1c2d4e-0001
+
+{ "descricao": "Buraco enorme na frente da escola", "bairro": "Vila Mariana",
+  "latitude": -23.588700, "longitude": -46.632300 }
+
+###
+GET {{host}}/ocorrencias/minhas?page=0&size=10
+Authorization: Bearer {{loginCidadao.response.body.$.token}}
+
+###
+GET {{host}}/ocorrencias?status=RECEBIDA&sort=prioridade
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+
+###
+PATCH {{host}}/ocorrencias/{{criar.response.body.$.id}}/status
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+Content-Type: application/json
+
+{ "status": "TRIADA", "categoria": "BURACO", "prioridade": "ALTA", "comentario": "Perto de escola" }
+
+###
+PATCH {{host}}/ocorrencias/{{criar.response.body.$.id}}/status
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+Content-Type: application/json
+
+{ "status": "EM_ANDAMENTO", "prazoEstimadoDias": 10, "comentario": "Equipe enviada" }
+
+###
+GET {{host}}/ocorrencias/{{criar.response.body.$.id}}
+Authorization: Bearer {{loginCidadao.response.body.$.token}}
+
+###
+GET {{host}}/health
