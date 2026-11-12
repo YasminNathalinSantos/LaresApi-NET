@@ -1,9 +1,7 @@
-using LaresApi.Settings;
+using LaresApi.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
-using MongoDB.Bson;
-using MongoDB.Driver;
 
 namespace LaresApi.HealthChecks
 {
@@ -24,24 +22,22 @@ namespace LaresApi.HealthChecks
         }
     }
 
-    public class MongoHealthCheck(IServiceProvider services, IOptions<LaresDatabaseSettings> opcoes) : IHealthCheck
+    public class SqlServerHealthCheck(LaresDbContext db) : IHealthCheck
     {
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
-            var banco = opcoes.Value;
-            if (banco.UsarEmMemoria || string.IsNullOrWhiteSpace(banco.ConnectionString))
-                return HealthCheckResult.Healthy("Banco em memória (sem connection string do MongoDB)");
+            if (db.Database.IsInMemory())
+                return HealthCheckResult.Healthy("Banco em memória");
 
             try
             {
-                var client = services.GetRequiredService<IMongoClient>();
-                await client.GetDatabase(banco.DatabaseName)
-                    .RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1), cancellationToken: cancellationToken);
-                return HealthCheckResult.Healthy($"MongoDB respondendo ({banco.DatabaseName})");
+                return await db.Database.CanConnectAsync(cancellationToken)
+                    ? HealthCheckResult.Healthy("SQL Server acessível")
+                    : HealthCheckResult.Unhealthy("SQL Server inacessível");
             }
             catch (Exception ex)
             {
-                return HealthCheckResult.Unhealthy("MongoDB inacessível", ex);
+                return HealthCheckResult.Unhealthy("SQL Server inacessível", ex);
             }
         }
     }
@@ -53,7 +49,7 @@ namespace LaresApi.HealthChecks
             services.AddHealthChecks()
                 .AddCheck("api", () => HealthCheckResult.Healthy("API respondendo"), tags: ["live"])
                 .AddCheck<MemoriaHealthCheck>("memoria", tags: ["live"])
-                .AddCheck<MongoHealthCheck>("mongodb", HealthStatus.Unhealthy, tags: ["ready"], timeout: TimeSpan.FromSeconds(10));
+                .AddCheck<SqlServerHealthCheck>("sqlserver", HealthStatus.Unhealthy, tags: ["ready"], timeout: TimeSpan.FromSeconds(10));
 
             return services;
         }

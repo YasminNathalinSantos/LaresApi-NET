@@ -101,7 +101,7 @@ namespace LaresApi.Tests.Integration
     public class HealthCheckTests(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
     {
         [Fact]
-        public async Task Health_SemToken_Retorna200ComMongoHealthy()
+        public async Task Health_SemToken_Retorna200ComSqlServerHealthy()
         {
             var client = factory.CreateClient();
 
@@ -110,7 +110,7 @@ namespace LaresApi.Tests.Integration
             Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
             using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             var verificacoes = json.RootElement.GetProperty("verificacoes").EnumerateArray().ToList();
-            var banco = verificacoes.Single(v => v.GetProperty("nome").GetString() == "mongodb");
+            var banco = verificacoes.Single(v => v.GetProperty("nome").GetString() == "sqlserver");
             Assert.Equal("Healthy", banco.GetProperty("status").GetString());
         }
 

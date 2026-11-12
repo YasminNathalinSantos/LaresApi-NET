@@ -5,7 +5,6 @@ using LaresApi.Data;
 using LaresApi.Domain;
 using LaresApi.Models;
 using Microsoft.EntityFrameworkCore;
-using MongoDB.Driver;
 
 namespace LaresApi.Services
 {
@@ -114,7 +113,7 @@ namespace LaresApi.Services
                 await db.SaveChangesAsync(ct);
                 return true;
             }
-            catch (Exception ex) when (ex is DbUpdateException or MongoException or InvalidOperationException or ArgumentException)
+            catch (Exception ex) when (ex is DbUpdateException or InvalidOperationException or ArgumentException)
             {
                 db.Entry(registro).State = EntityState.Detached;
                 return false;
