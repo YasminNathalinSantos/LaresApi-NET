@@ -1,5 +1,6 @@
 using LaresApi.Data;
 using LaresApi.Settings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace LaresApi.Extensions
@@ -24,17 +25,18 @@ namespace LaresApi.Extensions
             var tempo = scope.ServiceProvider.GetRequiredService<TimeProvider>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<LaresDbContext>>();
 
-            if (!banco.UsarEmMemoria && string.IsNullOrWhiteSpace(banco.ConnectionString))
-                logger.LogWarning("LaresDatabase:ConnectionString não configurada: usando banco em memória. Configure-a para usar o MongoDB Atlas.");
-
             try
             {
+                if (db.Database.IsRelational())
+                    await db.Database.MigrateAsync();
+
                 await DbSeeder.SemearAsync(db, tempo);
-                logger.LogInformation("Banco pronto ({Provider}, {Banco}).", db.Database.ProviderName, banco.DatabaseName);
+                logger.LogInformation("Banco pronto ({Provider}).", db.Database.ProviderName);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Não foi possível inicializar o banco de dados.");
+                throw;
             }
         }
     }

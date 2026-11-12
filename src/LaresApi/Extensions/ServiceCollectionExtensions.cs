@@ -11,8 +11,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver;
-using MongoDB.EntityFrameworkCore.Extensions;
 
 namespace LaresApi.Extensions
 {
@@ -22,29 +20,21 @@ namespace LaresApi.Extensions
         {
             services.AddOptions<LaresDatabaseSettings>().BindConfiguration("LaresDatabase");
 
-            services.AddSingleton<IMongoClient>(sp =>
-            {
-                var banco = sp.GetRequiredService<IOptions<LaresDatabaseSettings>>().Value;
-                if (string.IsNullOrWhiteSpace(banco.ConnectionString))
-                    throw new InvalidOperationException(
-                        "Connection string do MongoDB não configurada. Defina a variável de ambiente LaresDatabase__ConnectionString.");
-
-                var settings = MongoClientSettings.FromConnectionString(banco.ConnectionString);
-                settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-                settings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
-                return new MongoClient(settings);
-            });
-
             services.AddDbContext<LaresDbContext>((sp, options) =>
             {
                 var banco = sp.GetRequiredService<IOptions<LaresDatabaseSettings>>().Value;
-                if (banco.UsarEmMemoria || string.IsNullOrWhiteSpace(banco.ConnectionString))
+                if (banco.UsarEmMemoria)
                 {
                     options.UseInMemoryDatabase(banco.DatabaseName);
                     return;
                 }
 
-                options.UseMongoDB(sp.GetRequiredService<IMongoClient>(), banco.DatabaseName);
+                var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("LaresSql");
+                if (string.IsNullOrWhiteSpace(connectionString))
+                    throw new InvalidOperationException(
+                        "Connection string do SQL Server não configurada. Defina ConnectionStrings__LaresSql.");
+
+                options.UseSqlServer(connectionString);
             });
 
             return services;

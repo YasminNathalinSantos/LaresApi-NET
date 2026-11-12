@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace LaresApi.Domain
 {
     public static class DataHora
@@ -32,6 +34,6 @@ namespace LaresApi.Domain
 
     public static class NovoId
     {
-        public static string Gerar() => MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+        public static string Gerar() => Convert.ToHexString(RandomNumberGenerator.GetBytes(12)).ToLowerInvariant();
     }
 }

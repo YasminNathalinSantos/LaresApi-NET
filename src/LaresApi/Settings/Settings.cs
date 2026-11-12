@@ -10,7 +10,6 @@ namespace LaresApi.Settings
 
     public class LaresDatabaseSettings
     {
-        public string ConnectionString { get; set; } = string.Empty;
         public string DatabaseName { get; set; } = "LaresDb";
         public bool UsarEmMemoria { get; set; }
         public bool InicializarNaPartida { get; set; } = true;
