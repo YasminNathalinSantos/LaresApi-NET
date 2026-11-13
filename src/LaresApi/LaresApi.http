@@ -25,6 +25,29 @@ GET {{host}}/categorias
 Authorization: Bearer {{loginCidadao.response.body.$.token}}
 
 ###
+# @name criarCategoria
+POST {{host}}/categorias
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+Content-Type: application/json
+
+{ "codigo": "TESTE-API", "nome": "Categoria de teste", "descricao": "Exemplo de CRUD", "prazoPadraoDias": 12 }
+
+###
+GET {{host}}/categorias/{{criarCategoria.response.body.$.id}}
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+
+###
+PUT {{host}}/categorias/{{criarCategoria.response.body.$.id}}
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+Content-Type: application/json
+
+{ "codigo": "TESTE-API", "nome": "Categoria atualizada", "descricao": "Prazo revisado", "prazoPadraoDias": 14 }
+
+###
+DELETE {{host}}/categorias/{{criarCategoria.response.body.$.id}}
+Authorization: Bearer {{loginGestor.response.body.$.token}}
+
+###
 # @name criar
 POST {{host}}/ocorrencias
 Authorization: Bearer {{loginCidadao.response.body.$.token}}

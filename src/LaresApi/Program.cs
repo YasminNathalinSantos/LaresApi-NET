@@ -43,6 +43,7 @@ app.UseRateLimiter();
 
 app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 app.MapAuthEndpoints();
+app.MapCategoriaEndpoints();
 app.MapOcorrenciaEndpoints();
 app.MapLaresHealthChecks();
 

@@ -205,7 +205,8 @@ No Swagger: `POST /auth/login` → copie o `token` → **Authorize** → cole o 
 | `POST /auth/registro` | público | cadastro de cidadão |
 | `POST /auth/login` | público | devolve o token (24 h) |
 | `GET /usuarios/me` | logado | dados do usuário |
-| `GET /categorias` | logado | categorias e prazo padrão |
+| `GET /categorias` · `GET /categorias/{id}` | logado | lista e detalhe de categoria |
+| `POST /categorias` · `PUT /categorias/{id}` · `DELETE /categorias/{id}` | GESTOR | CRUD de categorias; códigos únicos e exclusão bloqueada quando há ocorrências associadas |
 | `POST /ocorrencias` | CIDADAO | registrar (idempotente com `Idempotency-Key`, 5/min) |
 | `GET /ocorrencias/minhas?page&size` | CIDADAO | minhas ocorrências |
 | `GET /ocorrencias?bairro&status&sort&page&size` | logado | busca; fila do gestor: `status=RECEBIDA&sort=prioridade` |
