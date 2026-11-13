@@ -271,14 +271,216 @@ O Lares usa IA na **API Java** (serviço Python/FastAPI de triagem e Spring AI p
 
 ---
 
-## Azure DevOps
+## DevOps e Cloud — Azure
 
-O projeto já está preparado para Azure SQL por meio da connection string `ConnectionStrings__LaresSql`, migrations e do DDL em `scripts/script-bd.sql`. O material de DevOps da Global Solution também pede provisionamento via Azure CLI, pipeline de CI e release/CD automático. Esses recursos de infraestrutura/pipeline não fazem parte deste repositório nesta alteração e precisam ser adicionados/configurados no projeto Azure DevOps (service connection, nome do App Service e variáveis secretas) antes de habilitar o deploy.
+A infraestrutura e o processo de CI/CD do **Lares** foram implementados utilizando **Microsoft Azure** e **Azure DevOps**.
 
-Depois da importação no Azure Repos, toda mudança entra na `main` via PR ligado a um work item; em seguida o GitHub é atualizado:
+A API utilizada nesta entrega é a **Lares API .NET**, publicada em um **Azure App Service Linux** e conectada a um banco **Azure SQL Database**.
+
+O Azure DevOps é utilizado para integrar planejamento, versionamento e automação por meio de:
+
+- **Azure Boards** — rastreamento das tarefas e vínculo com branches, commits e Pull Requests;
+- **Azure Repos** — versionamento do código utilizado pelas pipelines;
+- **Azure Pipelines** — execução automática das pipelines de CI e CD.
+
+### Arquitetura DevOps
+
+![Arquitetura DevOps do Lares](docs/arquitetura-devops.png)
+
+A infraestrutura possui os seguintes componentes principais:
+
+- **Resource Group** — agrupa os recursos utilizados pelo projeto no Azure;
+- **App Service Plan Linux** — define o ambiente e os recursos utilizados pelo Web App;
+- **Azure App Service** — hospeda a API .NET;
+- **Azure SQL Server** — servidor lógico que hospeda o banco;
+- **Azure SQL Database** — banco relacional utilizado pela API;
+- **Firewall Rules** — controlam o acesso ao Azure SQL;
+- **Azure DevOps** — responsável pelo versionamento, rastreabilidade e CI/CD.
+
+A infraestrutura é criada por meio de **Azure CLI**, utilizando o script disponível em:
+
+```text
+/scripts/01_criacao_infra.sh
+```
+
+O DDL utilizado pelo banco está disponível em:
+
+```text
+/scripts/script-bd.sql
+```
+
+---
+
+## Fluxo de trabalho com Azure Boards e Repos
+
+O desenvolvimento segue um fluxo baseado em Task, Branch e Pull Request.
+
+1. Uma **Task** é criada no Azure Boards.
+2. Uma nova branch é criada e vinculada ao Work Item.
+3. As alterações de código são feitas nessa branch.
+4. O commit é vinculado à Task.
+5. É criado um Pull Request para a branch `main`.
+6. A `main` possui políticas de proteção que exigem:
+   - Work Item vinculado;
+   - aprovação de reviewer;
+   - utilização de Pull Request.
+7. Após a aprovação, o código é mergeado na `main`.
+8. O merge dispara automaticamente a pipeline de CI.
+
+Esse processo fornece rastreabilidade entre:
+
+```text
+Task → Branch → Commit → Pull Request → Merge → CI/CD
+```
+
+---
+
+## Pipeline de CI — Continuous Integration
+
+A pipeline de CI é acionada automaticamente após alterações aprovadas e mergeadas na branch principal.
+
+Ela possui duas etapas principais.
+
+### 1. Provisionamento da infraestrutura
+
+A Task **Azure CLI** executa o script:
+
+```text
+scripts/01_criacao_infra.sh
+```
+
+O script cria ou valida os recursos necessários no Microsoft Azure, incluindo:
+
+- Resource Group;
+- App Service Plan;
+- Web App;
+- Azure SQL Server;
+- Azure SQL Database;
+- regras de firewall.
+
+Dados sensíveis, como a senha administrativa do SQL, são armazenados como **variáveis secretas no Azure DevOps** e não são versionados no repositório.
+
+### 2. Build and Test
+
+Após a infraestrutura, a pipeline executa as seguintes Tasks:
+
+#### Restore
+
+Restaura os pacotes e dependências NuGet necessários para a solução.
+
+#### Build
+
+Compila a solução .NET e valida a existência de erros de compilação.
+
+#### Test
+
+Executa automaticamente os testes desenvolvidos com **xUnit**.
+
+Os resultados são publicados no próprio Azure DevOps, permitindo visualizar quantidade de testes executados, aprovados e falhos.
+
+#### Publish
+
+Prepara a aplicação compilada para publicação.
+
+#### Publish Artifact
+
+Publica o pacote gerado pela aplicação como artefato da pipeline.
+
+O artefato gerado é:
+
+```text
+LaresApi.zip
+```
+
+Esse pacote é posteriormente utilizado pela pipeline de Release/CD.
+
+---
+
+## Pipeline de CD — Continuous Deployment
+
+Após a geração de um novo artefato pela CI, o **Continuous Deployment Trigger** inicia automaticamente uma nova Release.
+
+A pipeline de CD:
+
+1. baixa o artefato `LaresApi.zip`;
+2. executa a Task de deploy para o Azure App Service;
+3. aplica as configurações e variáveis de ambiente;
+4. publica a nova versão da API no Web App.
+
+O resultado é a atualização automática da aplicação hospedada no Azure sempre que uma nova versão aprovada chega à branch principal.
+
+O fluxo completo pode ser resumido como:
+
+```text
+Azure Boards
+      ↓
+Branch de desenvolvimento
+      ↓
+Commit
+      ↓
+Pull Request
+      ↓
+Merge na main
+      ↓
+CI automática
+      ↓
+Restore
+      ↓
+Build
+      ↓
+Testes xUnit
+      ↓
+Publish
+      ↓
+LaresApi.zip
+      ↓
+Release automática
+      ↓
+Deploy no Azure App Service
+      ↓
+API .NET
+      ↓
+Azure SQL Database
+```
+
+---
+
+## Variáveis de ambiente e segurança
+
+Dados sensíveis não são armazenados diretamente no código-fonte.
+
+As principais configurações utilizadas no ambiente Azure são:
+
+```text
+ASPNETCORE_ENVIRONMENT
+ConnectionStrings__LaresSql
+Jwt__Chave
+```
+
+A connection string do Azure SQL e a chave JWT são armazenadas como **variáveis secretas no Azure DevOps**.
+
+Durante a Release, esses valores são enviados ao Azure App Service por meio das **Application Settings**.
+
+Dessa forma, credenciais e segredos permanecem fora do repositório.
+
+---
+
+## Testes e validação
+
+A pipeline de CI executa automaticamente a suíte de testes xUnit antes da publicação da aplicação.
+
+Para executar os testes localmente:
 
 ```bash
-git remote add azure <URL do Azure Repos>
-git push azure main
-git push origin main
+dotnet test
 ```
+
+A solução também é validada após o deploy através de:
+
+- Swagger/OpenAPI;
+- Health Checks;
+- testes de autenticação;
+- operações CRUD;
+- consultas `SELECT` diretamente no Azure SQL para comprovar a persistência.
+
+O fluxo de deploy somente prossegue com a versão da aplicação compilada, testada e publicada como artefato pela pipeline de CI.
