@@ -16,6 +16,8 @@ namespace LaresApi.DTOs
 
     public record CategoriaResponse(string Id, string Codigo, string Nome, string? Descricao, int PrazoPadraoDias);
 
+    public record CategoriaRequest(string? Codigo, string? Nome, string? Descricao, int? PrazoPadraoDias);
+
     public record CategoriaResumo(string Id, string Codigo, string Nome);
 
     public record OcorrenciaRequest(string? Descricao, string? Bairro, decimal? Latitude, decimal? Longitude);

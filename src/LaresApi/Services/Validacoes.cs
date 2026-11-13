@@ -51,6 +51,21 @@ namespace LaresApi.Services
             Lancar(campos);
         }
 
+        public static void ValidarCategoria(CategoriaRequest req)
+        {
+            var campos = new Dictionary<string, string>();
+            Texto(campos, "codigo", req.Codigo, 20);
+            Texto(campos, "nome", req.Nome, 60);
+
+            if (req.Descricao is { Length: > 255 })
+                campos["descricao"] = "deve ter no máximo 255 caracteres";
+
+            if (req.PrazoPadraoDias is null or < 1)
+                campos["prazoPadraoDias"] = "deve ser maior que zero";
+
+            Lancar(campos);
+        }
+
         public static void ValidarAlteracaoStatus(AlterarStatusRequest req)
         {
             var campos = new Dictionary<string, string>();
